@@ -18,11 +18,11 @@ def check_file_exists(file_path):
     return os.path.exists(file_path)
 
 
-def download_file(url, file_path, title):
+def download_file(url, file_path):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get("content-length", 0))
 
-    file_progress_bar = tqdm(
+    progress_bar = tqdm(
         total=total_size,
         unit="B",
         unit_scale=True,
@@ -33,12 +33,10 @@ def download_file(url, file_path, title):
 
     with open(file_path, "wb") as file:
         for data in response.iter_content(chunk_size=1024):
-            # progress_bar.update(len(data))
-            file_progress_bar.update(len(data))
+            progress_bar.update(len(data))
             file.write(data)
 
-    # progress_bar.close()
-    file_progress_bar.close()
+    progress_bar.close()
     print("Download concluído!")
 
 
@@ -61,22 +59,20 @@ def is_video_corrupted(file_path):
     try:
         cap = cv2.VideoCapture(file_path)
         if not cap.isOpened():
-            return True  # Unable to open the video file
+            return True
 
-        # Read the first frame
         ret, frame = cap.read()
 
         if not ret:
-            return True  # Unable to read the first frame
+            return True
 
-        # Check if the frame is valid
         if frame is None or frame.size == 0:
-            return True  # Invalid frame
+            return True
 
-        return False  # Video file is not corrupted
+        return False
 
     except Exception:
-        return True  # Error occurred during video file processing
+        return True
 
 
 def download_videos(data):
