@@ -104,7 +104,7 @@ def download_videos(data):
                     continue
 
             print(f"Baixando vídeo: {title}")
-            download_file(video_url, file_path, title)
+            download_file(video_url, file_path)
 
     print("Todos os vídeos foram baixados com sucesso.")
 
