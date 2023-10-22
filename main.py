@@ -3,6 +3,7 @@ import cv2
 import os
 import requests
 from tqdm import tqdm
+from filename import sanitize_filename, truncate_filename
 
 
 def load_json(file_path):
@@ -89,7 +90,7 @@ def download_videos(data):
             title = video["titulo"]
             resolutions = video["resolucoes"]
 
-            file_name = f"Video {video_number} - {title}.mp4"
+            file_name = f"Video {video_number} - {truncate_filename(sanitize_filename(title))}.mp4"
             file_path = os.path.join(directory_path, file_name)
             video_url = select_resolution(resolutions=resolutions)
 
