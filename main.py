@@ -5,6 +5,8 @@ import requests
 from tqdm import tqdm
 from filename import sanitize_filename, truncate_filename
 
+BASE_DIR = "aulas"
+
 
 def load_json(file_path):
     with open(file_path) as file:
@@ -29,7 +31,7 @@ def download_file(url, file_path):
         unit_scale=True,
         unit_divisor=1024,
         miniters=1,
-        desc="Baixando",
+        # desc="Baixando",
     )
 
     with open(file_path, "wb") as file:
@@ -38,7 +40,7 @@ def download_file(url, file_path):
             file.write(data)
 
     progress_bar.close()
-    print("Download concluído!")
+    # print("Download concluído!")
 
 
 def select_resolution(resolutions):
@@ -76,22 +78,29 @@ def is_video_corrupted(file_path):
         return True
 
 
-def download_videos(data):
+def clear_console():
+    print("\033c", end="")
+
+
+def download_videos(destination, data):
     for lesson in data:
         lesson_name = lesson["nome"]
         videos = lesson["videos"]
-        directory_path = lesson_name
 
-        create_directory(directory_path)
-        print(f"Baixando vídeos da lição: {lesson_name}")
+        print(f"Baixando vídeos da {lesson_name}")
+
+        create_directory(os.path.join(destination, lesson["nome"]))
+        current_lesson_dir = os.path.join(destination, lesson["nome"])
 
         video_number = 1
-        for video in videos:
+        for i in range(len(videos)):
+            video = videos[i]
             title = video["titulo"]
             resolutions = video["resolucoes"]
 
             file_name = f"Video {video_number} - {truncate_filename(sanitize_filename(title))}.mp4"
-            file_path = os.path.join(directory_path, file_name)
+
+            file_path = os.path.join(current_lesson_dir, file_name)
             video_url = select_resolution(resolutions=resolutions)
 
             video_number += 1
@@ -104,16 +113,21 @@ def download_videos(data):
                 else:
                     continue
 
-            print(f"Baixando vídeo: {title}")
+            print(f"Baixando ({i + 1}/{len(videos)}): {title}")
             download_file(video_url, file_path)
 
+        clear_console()
     print("Todos os vídeos foram baixados com sucesso.")
 
 
 def main():
     file_path = "lessons.json"
     data = load_json(file_path)
-    download_videos(data)
+    aulas_dir = os.path.join(BASE_DIR, data["nome"])
+    aulas = data["aulas"]
+
+    create_directory(BASE_DIR)
+    download_videos(aulas_dir, aulas)
 
 
 if __name__ == "__main__":
