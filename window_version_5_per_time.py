@@ -57,19 +57,21 @@ def download_video(video_info):
     file_path = video_info['file_path']
     video_url = video_info['video_url']
     title = video_info['title']
+    total_videos = video_info['total_videos']
+    current_video = video_info['current_video']
     
     try:
         # Verificar se o arquivo já existe e não está corrompido
         if os.path.exists(file_path) and not is_video_corrupted(file_path):
             with tqdm_lock:
-                print(f"Arquivo já existe: {file_path}")
+                print(f"O arquivo já existe e não está corrompido, pulando: {file_path}")
             return
 
         # Criar a pasta se não existir
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         with tqdm_lock:
-            print(f"Baixando {file_path}...")
+            print(f"Baixando ({current_video} de {total_videos}): {file_path}")
 
         # Realizar o download com progresso
         with requests.get(video_url, stream=True) as response:
@@ -80,9 +82,7 @@ def download_video(video_info):
                     total=total_size,
                     unit='B',
                     unit_scale=True,
-                    desc='',
-                    bar_format='{bar}{percentage:>3.0f}% | {rate_fmt}',
-                    leave=True
+                    desc=f"Video {current_video}/{total_videos}"
                 )
 
             with open(file_path, 'wb') as file:
@@ -108,12 +108,15 @@ def process_course(course_data, root_dir="aulas"):
     discipline_dir = os.path.join(root_dir, discipline_name)
     
     videos_to_download = []
-    
+    total_videos = sum(len(aula["videos"]) for aula in course_data["aulas"])
+    current_video = 0
+
     for aula in course_data["aulas"]:
         aula_name = "".join(c for c in aula["nome"] if c.isalnum() or c.isspace() or c in ['-', '_']).strip()
         aula_subdir = os.path.join(discipline_dir, aula_name)
 
         for j, video in enumerate(aula["videos"], start=1):
+            current_video += 1
             video_title = "".join(c for c in video["titulo"] if c.isalnum() or c.isspace() or c in ['-', '_']).strip()
             file_path = os.path.join(aula_subdir, f"Video {j} - {video_title}.mp4")
             truncated_file_path = truncate_filename(file_path)
@@ -125,7 +128,9 @@ def process_course(course_data, root_dir="aulas"):
                     videos_to_download.append({
                         'file_path': truncated_file_path,
                         'video_url': video_url,
-                        'title': video_title
+                        'title': video_title,
+                        'total_videos': total_videos,
+                        'current_video': current_video
                     })
                     break
 
@@ -143,7 +148,7 @@ def main():
     json_files = [f for f in os.listdir() if f.endswith(".json")]
 
     start_time = datetime.now()
-    print(f"Iniciando downloads em {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    print(f"Iniciando downloads em {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     for json_file in json_files:
         try:
@@ -158,6 +163,7 @@ def main():
             # Processar cada curso e coletar todos os vídeos para download
             all_videos = []
             for course_data in courses_data:
+                print(f"\nPreparando curso: {course_data['nome']}")
                 videos = process_course(course_data, root_dir)
                 all_videos.extend(videos)
 
